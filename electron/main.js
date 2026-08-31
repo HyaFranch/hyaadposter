@@ -7,7 +7,7 @@ const isDev = process.env.NODE_ENV === 'development'
 let mainWindow
 
 function createWindow() {
-  const iconPath = path.join(__dirname, '../assets/icon.png')
+  const iconPath = path.join(__dirname, '../assets/icon.ico')
   const iconExists = fs.existsSync(iconPath)
 
   mainWindow = new BrowserWindow({

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X, AlertTriangle, CheckCircle2, Info, Loader2 } from 'lucide-react'
 
 /* ─── Button ─────────────────────────────────────────────────────────────── */
@@ -162,13 +163,18 @@ export function Toggle({ checked, onChange, label, description }) {
 /* ─── Modal ──────────────────────────────────────────────────────────────── */
 export function Modal({ open, onClose, title, children, width = 480 }) {
   if (!open) return null
-  return (
+
+  // Rendered via portal directly under <body>, so it always covers the
+  // real viewport (titlebar included) no matter where in the component
+  // tree it's mounted from, or how the window is sized/maximized.
+  return createPortal(
     <div
       style={{
-        position: 'fixed', inset: 0, zIndex: 100,
+        position: 'fixed', inset: 0, zIndex: 1000,
         background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        overflowY: 'auto',
+        padding: '40px 24px',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
@@ -179,7 +185,7 @@ export function Modal({ open, onClose, title, children, width = 480 }) {
           border: '1px solid var(--border-light)',
           borderRadius: 'var(--r-xl)',
           width: '100%', maxWidth: width,
-          maxHeight: '90vh', overflow: 'auto',
+          margin: 'auto 0',
           boxShadow: 'var(--shadow-lg)',
         }}
       >
@@ -194,7 +200,8 @@ export function Modal({ open, onClose, title, children, width = 480 }) {
         </div>
         <div style={{ padding: 20 }}>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

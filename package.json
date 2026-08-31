@@ -40,6 +40,7 @@
   "build": {
     "appId": "com.hyaadposter.app",
     "productName": "HyaAdPoster",
+    "icon": "assets/icon.ico",
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -48,6 +49,7 @@
       "output": "dist-electron"
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -60,8 +62,8 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": null,
-      "uninstallerIcon": null
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico"
     },
     "linux": {
       "target": "AppImage"
