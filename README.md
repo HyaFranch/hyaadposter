@@ -6,6 +6,10 @@ Instead of manually reposting your trade ads every 15 minutes, you can configure
 
 The application is built with Electron, React and Vite and runs locally on your computer.
 
+<p align="center">
+  <img src="./assets/preview.png" alt="HyaAdPoster Preview" width="900">
+</p>
+
 ## Features
 
 - Automatic trade ad posting
