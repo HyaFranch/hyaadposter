@@ -10,7 +10,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
   },
   cookie: {
-    protect:   (plain)      => ipcRenderer.invoke('cookie:protect', plain),
-    unprotect: (protected_) => ipcRenderer.invoke('cookie:unprotect', protected_),
+    protect:   (plain) => ipcRenderer.invoke('cookie:protect', plain),
+    unprotect: (prot)  => ipcRenderer.invoke('cookie:unprotect', prot),
+  },
+  auth: {
+    // Opens the Rolimons login window and returns { ok, cookie, username }
+    openLoginWindow: (existingUsername) => ipcRenderer.invoke('auth:openLoginWindow', existingUsername),
   },
 })

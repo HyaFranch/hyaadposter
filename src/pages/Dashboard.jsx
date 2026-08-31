@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Play, Square, RefreshCw, Zap, Clock, Hash, User, Layers } from 'lucide-react'
+import { Play, Square, RefreshCw, Zap, Clock, Hash, User, Layers, AlertTriangle } from 'lucide-react'
 import { useApp } from '../hooks/useAppState'
 import { useSessionTimer } from '../hooks/useCountdown'
 import { Button, Card, PageHeader, Stat, Alert, Badge, EmptyState } from '../components/ui'
+import { unprotectCookie } from '../utils/config'
 
 const TAG_LABELS = {
   any: 'Any', demand: 'Demand', rares: 'Rares', rap: 'RAP',
   wishlist: 'Wishlist', robux: 'Robux', upgrade: 'Upgrade',
   downgrade: 'Downgrade', adds: 'Adds', projecteds: 'Projecteds',
-}
-
-function formatNumber(n) {
-  try { return Number(Math.round(Number(n))).toLocaleString('pt-BR') }
-  catch { return String(n) }
 }
 
 export default function Dashboard() {
@@ -39,39 +35,56 @@ export default function Dashboard() {
   }, [logs])
 
   const queue = profiles[selectedProfile]?.queue ?? []
-  const canStart = activeAccount && selectedProfile && queue.length > 0
+  const hasCookie = !!unprotectCookie(activeAccount?.cookie_protected ?? '')
+  const canStart = !!(activeAccount && selectedProfile && queue.length > 0 && hasCookie)
   const isRunning = botStatus === 'running' || botStatus === 'stopping'
 
   const handleStart = () => {
-    if (!canStart) return
+    if (!canStart || isRunning) return
     setSessionAds(0)
-    setSessionStart(null)
     startBot({ profileName: selectedProfile })
   }
+
+  // Why can't we start?
+  const startBlockReason = !activeAccount ? 'No account selected'
+    : !hasCookie ? 'Account not verified — re-verify in Accounts'
+    : !selectedProfile ? 'No profile selected'
+    : queue.length === 0 ? 'Profile queue is empty — add trades first'
+    : null
 
   const recentLogs = logs.slice(-5).reverse()
 
   return (
     <div className="animate-fadein">
-      <PageHeader
-        title="Dashboard"
-        subtitle="Control the ad-posting bot"
-      />
+      <PageHeader title="Dashboard" subtitle="Control the ad-posting bot" />
 
-      {/* No account warning */}
-      {!activeAccount && (
-        <Alert variant="warning">
-          No account configured. Go to <strong>Accounts</strong> to add your Roblox/Rolimons account.
+      {/* Warnings */}
+      {startBlockReason && botStatus === 'idle' && (
+        <Alert variant="warning" style={{ marginBottom: 16 }}>
+          <AlertTriangle size={13} /> {startBlockReason}
+        </Alert>
+      )}
+      {botStatus === 'expired' && (
+        <Alert variant="danger" style={{ marginBottom: 16 }}>
+          Cookie expired — go to <strong>Accounts</strong> and re-verify.
         </Alert>
       )}
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <Stat label="Status"      value={botStatus.charAt(0).toUpperCase() + botStatus.slice(1)} icon={Zap}
-          accent={botStatus === 'running' ? 'var(--success)' : botStatus === 'expired' ? 'var(--danger)' : undefined} />
-        <Stat label="Ads This Session" value={sessionAds}      icon={Hash} accent="var(--accent)" />
-        <Stat label="Session Time"     value={isRunning ? elapsed : '—'} icon={Clock} />
-        <Stat label="Active Account"   value={activeAccount?.username ?? '—'} icon={User} />
+        <Stat
+          label="Status"
+          value={botStatus.charAt(0).toUpperCase() + botStatus.slice(1)}
+          icon={Zap}
+          accent={
+            botStatus === 'running'  ? 'var(--success)' :
+            botStatus === 'expired'  ? 'var(--danger)'  :
+            botStatus === 'stopping' ? 'var(--warning)' : undefined
+          }
+        />
+        <Stat label="Ads This Session" value={sessionAds} icon={Hash} accent="var(--accent)" />
+        <Stat label="Session Time" value={isRunning ? elapsed : '—'} icon={Clock} />
+        <Stat label="Active Account" value={activeAccount?.username ?? '—'} icon={User} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -96,7 +109,7 @@ export default function Dashboard() {
                   border: '1px solid var(--border-light)', borderRadius: 'var(--r-sm)',
                   color: 'var(--text)', padding: '8px 12px', fontSize: 13,
                   fontFamily: 'inherit', cursor: isRunning ? 'not-allowed' : 'pointer',
-                  opacity: isRunning ? 0.6 : 1,
+                  opacity: isRunning ? 0.6 : 1, outline: 'none',
                 }}
               >
                 {profileNames.map(n => (
@@ -123,11 +136,11 @@ export default function Dashboard() {
                     padding: '8px 12px', background: 'var(--surface-2)',
                     borderRadius: 'var(--r-sm)', border: '1px solid var(--border)',
                   }}>
-                    <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', minWidth: 16 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-dim)', fontFamily: 'monospace', minWidth: 16 }}>
                       {i + 1}
                     </span>
                     <span style={{ flex: 1, fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {trade.offer_items.map(i => i.name).join(', ')}
+                      {trade.offer_items.map(it => it.name).join(', ')}
                     </span>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {(trade.tags ?? []).map(t => (
@@ -145,7 +158,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Start/Stop */}
+          {/* Start / Stop buttons */}
           <div style={{ display: 'flex', gap: 10 }}>
             <Button
               variant="primary"
@@ -155,23 +168,24 @@ export default function Dashboard() {
               disabled={!canStart || isRunning}
               onClick={handleStart}
             >
-              Start Bot
+              {botStatus === 'stopping' ? 'Stopping…' : 'Start Bot'}
             </Button>
             <Button
               variant="danger"
               size="lg"
               icon={<Square size={14} />}
-              disabled={botStatus === 'idle' || botStatus === 'expired'}
+              disabled={botStatus === 'idle' || botStatus === 'expired' || botStatus === 'stopping'}
               onClick={stopBot}
             >
               Stop
             </Button>
           </div>
 
-          {botStatus === 'expired' && (
-            <Alert variant="danger" style={{ marginTop: 12 }}>
-              Cookie expired. Re-verify the account in the <strong>Accounts</strong> tab.
-            </Alert>
+          {/* Disabled reason hint */}
+          {startBlockReason && (
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8, textAlign: 'center' }}>
+              {startBlockReason}
+            </div>
           )}
         </Card>
 
@@ -195,16 +209,17 @@ export default function Dashboard() {
                   background: 'var(--surface-2)',
                 }}>
                   <span style={{
-                    fontSize: 10, fontFamily: 'var(--font-mono)',
+                    fontSize: 10, fontFamily: 'monospace',
                     color: 'var(--text-dim)', flexShrink: 0, marginTop: 1,
                   }}>{entry.time}</span>
                   <span style={{
                     fontSize: 12,
-                    color: entry.level === 'ok' ? 'var(--success)'
+                    color: entry.level === 'ok'    ? 'var(--success)'
                          : entry.level === 'error' ? 'var(--danger)'
-                         : entry.level === 'warn' ? 'var(--warning)'
+                         : entry.level === 'warn'  ? 'var(--warning)'
                          : 'var(--text-muted)',
                     lineHeight: 1.5,
+                    wordBreak: 'break-word',
                   }}>
                     {entry.text}
                   </span>
