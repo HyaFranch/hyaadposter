@@ -68,8 +68,8 @@ jobs:
         id: find_exe
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path dist-electron -Filter "*.exe" -Recurse | Select-Object -First 1
-          if (-not $exe) { Write-Error "No .exe found in dist-electron"; exit 1 }
+          $exe = Get-ChildItem -Path dist-electron -Filter "*Setup*.exe" -Recurse | Select-Object -First 1
+          if (-not $exe) { Write-Error "No Setup .exe found in dist-electron"; exit 1 }
           echo "EXE_PATH=$($exe.FullName)" >> $env:GITHUB_OUTPUT
           echo "EXE_NAME=$($exe.Name)" >> $env:GITHUB_OUTPUT
           echo "Found: $($exe.FullName)"

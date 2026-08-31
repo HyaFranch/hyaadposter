@@ -192,8 +192,8 @@ export function AppProvider({ children }) {
       onStatusChange:   setBotStatus,
       onCookieExpired:  () => setBotStatus('expired'),
     })
-    botRef.current = bot
-    bot.start()
+    botRef.current = bot   // seta ANTES de start() para evitar race condition
+    await bot.start()
   }, [cfg, addLog])
 
   const stopBot = useCallback(() => {
