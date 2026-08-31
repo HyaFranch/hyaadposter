@@ -14,7 +14,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     unprotect: (prot)  => ipcRenderer.invoke('cookie:unprotect', prot),
   },
   auth: {
-    // Opens the Rolimons login window and returns { ok, cookie, username }
     openLoginWindow: (existingUsername) => ipcRenderer.invoke('auth:openLoginWindow', existingUsername),
+  },
+  rolimons: {
+    // postAd é feito pelo main process para poder setar o header Cookie livremente
+    postAd: (args) => ipcRenderer.invoke('rolimons:postAd', args),
   },
 })

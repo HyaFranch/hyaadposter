@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, session } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, session, net } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { protectCookie, unprotectCookie } = require('./security')
@@ -58,14 +58,54 @@ ipcMain.on('window:close', () => mainWindow?.close())
 ipcMain.handle('cookie:protect',   (_e, plain)  => protectCookie(plain))
 ipcMain.handle('cookie:unprotect', (_e, prot)   => unprotectCookie(prot))
 
+// ─── postAd via main process (bypasses browser Cookie header restriction) ──
+//
+// O fetch() do renderer NÃO consegue setar o header "Cookie" manualmente —
+// é bloqueado pelo browser por segurança. Por isso o cookie nunca chegava
+// na Rolimons e ela retornava 401/403.
+// A solução é fazer a requisição aqui no processo main via net.fetch(),
+// onde não há essa restrição.
+//
+ipcMain.handle('rolimons:postAd', async (_event, { userId, cookie, offerItemIds, tags, requestItemIds }) => {
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36'
+  const COOKIE_NAME = '_RoliVerification'
+
+  const body = JSON.stringify({
+    player_id:        userId,
+    offer_item_ids:   offerItemIds,
+    request_item_ids: requestItemIds ?? [],
+    request_tags:     tags,
+  })
+
+  try {
+    const res = await net.fetch('https://api.rolimons.com/tradeads/v1/createad', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie':        `${COOKIE_NAME}=${cookie}`,
+        'User-Agent':    UA,
+      },
+      body,
+    })
+
+    let parsed = {}
+    try { parsed = await res.json() } catch { /* ignore */ }
+
+    const status = res.status
+    const msg    = String(parsed.message ?? '')
+
+    return { status, message: msg, parsed }
+  } catch (err) {
+    return { status: 0, message: err.message, parsed: {} }
+  }
+})
+
 // ─── Rolimons login window — captures cookie automatically ─────────────────
 ipcMain.handle('auth:openLoginWindow', async (_event, existingUsername) => {
   return new Promise((resolve) => {
-    // Use an isolated partition so it doesn't share cookies with the main window
     const partition = 'persist:rolimons-login'
     const loginSession = session.fromPartition(partition)
 
-    // Clear old cookies so the user gets a fresh login every time
     loginSession.clearStorageData({ storages: ['cookies'] })
 
     const win = new BrowserWindow({
@@ -96,7 +136,6 @@ ipcMain.handle('auth:openLoginWindow', async (_event, existingUsername) => {
 
           const cookieValue = cookies[0].value
 
-          // Try to read the username from the Roblox session cookie or page title
           let username = existingUsername || ''
           if (!username) {
             try {
@@ -115,7 +154,6 @@ ipcMain.handle('auth:openLoginWindow', async (_event, existingUsername) => {
       } catch { /* ignore */ }
     }
 
-    // Poll every second for the cookie
     pollInterval = setInterval(checkCookie, 1000)
 
     win.on('closed', () => {

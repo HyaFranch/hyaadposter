@@ -73,7 +73,6 @@ const ITEM_CACHE_KEY = 'hyaadposter_itemcache_v1'
 const CACHE_TTL_MS = 30 * 60 * 1000  // 30 min
 
 export async function fetchItemMarketData() {
-  // Check cache first
   try {
     const raw = localStorage.getItem(ITEM_CACHE_KEY)
     if (raw) {
@@ -130,7 +129,36 @@ export function groupInventory(rawItems, marketData = {}) {
   return Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name))
 }
 
+// ─── postAd — delegado ao main process via IPC ─────────────────────────────
+//
+// O fetch() do renderer não pode setar o header "Cookie" manualmente
+// (bloqueado pelo browser por segurança). A requisição ia sem cookie,
+// causando 401/403 e o erro "Cookie expired or invalid".
+// Agora delegamos para window.electronAPI.rolimons.postAd(), que executa
+// net.fetch() no processo main onde não há essa restrição — idêntico ao
+// que o código Python antigo fazia com requests.post().
+//
 export async function postAd(userId, cookie, offerItemIds, tags, requestItemIds = []) {
+  // Fallback para ambiente não-Electron (ex: dev browser puro)
+  if (!window.electronAPI?.rolimons?.postAd) {
+    console.warn('[postAd] electronAPI não disponível — tentando fetch direto (pode falhar sem cookie)')
+    return _postAdFallback(userId, cookie, offerItemIds, tags, requestItemIds)
+  }
+
+  const { status, message: msg, parsed } = await window.electronAPI.rolimons.postAd({
+    userId, cookie, offerItemIds, tags, requestItemIds,
+  })
+
+  if (status === 0) return { ok: false, message: `Connection error: ${msg}` }
+  if (status === 401 || status === 403) throw new CookieExpiredError(`HTTP ${status}`)
+  if (/not verified|not authenticated|invalid session|log in/i.test(msg)) throw new CookieExpiredError(msg)
+  if (msg === 'Ad creation cooldown has not elapsed') return { ok: false, message: 'Cooldown has not elapsed yet' }
+  if (status !== 201) return { ok: false, message: `HTTP ${status}: ${JSON.stringify(parsed).slice(0, 200)}` }
+
+  return { ok: true, message: 'Ad posted successfully' }
+}
+
+async function _postAdFallback(userId, cookie, offerItemIds, tags, requestItemIds) {
   const res = await fetch('https://api.rolimons.com/tradeads/v1/createad', {
     method: 'POST',
     headers: {
