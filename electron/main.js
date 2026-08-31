@@ -77,27 +77,48 @@ ipcMain.handle('rolimons:postAd', async (_event, { userId, cookie, offerItemIds,
     request_tags:     tags,
   })
 
-  try {
-    const res = await net.fetch('https://api.rolimons.com/tradeads/v1/createad', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie':        `${COOKIE_NAME}=${cookie}`,
-        'User-Agent':    UA,
-      },
-      body,
-    })
+  return new Promise((resolve) => {
+    try {
+      const req = net.request({
+        method: 'POST',
+        url: 'https://api.rolimons.com/tradeads/v1/createad',
+      })
 
-    let parsed = {}
-    try { parsed = await res.json() } catch { /* ignore */ }
+      req.setHeader('Content-Type', 'application/json')
+      req.setHeader('Cookie', `${COOKIE_NAME}=${cookie}`)
+      req.setHeader('User-Agent', UA)
 
-    const status = res.status
-    const msg    = String(parsed.message ?? '')
+      let chunks = []
 
-    return { status, message: msg, parsed }
-  } catch (err) {
-    return { status: 0, message: err.message, parsed: {} }
-  }
+      req.on('response', (res) => {
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf-8')
+          let parsed = {}
+          try { parsed = JSON.parse(raw) } catch { /* ignore */ }
+
+          resolve({
+            status: res.statusCode,
+            message: String(parsed.message ?? ''),
+            parsed,
+          })
+        })
+      })
+
+      req.on('error', (err) => {
+        resolve({ status: 0, message: err.message, parsed: {} })
+      })
+
+      // Grava o body manualmente — evita o bug do net.fetch que descarta
+      // bodies do tipo string em algumas versões do Electron (ex: 31.x),
+      // fazendo a requisição sair sem Content-Length/corpo e a Rolimons
+      // rejeitar como se o cookie fosse inválido.
+      req.write(body)
+      req.end()
+    } catch (err) {
+      resolve({ status: 0, message: err.message, parsed: {} })
+    }
+  })
 })
 
 // ─── Rolimons login window — captures cookie automatically ─────────────────
