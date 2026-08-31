@@ -1,4 +1,4 @@
-# HyaAdPoster
+# HyaAdPoster by hyafranch https://guns.lol/hyafranch
 
 HyaAdPoster is a desktop application for automating trade ad posting on [Rolimons](https://www.rolimons.com).
 
