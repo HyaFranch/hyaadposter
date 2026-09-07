@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, Package, ArrowRight, Laye
 import { useApp } from '../hooks/useAppState'
 import { useInventory } from '../hooks/useInventory'
 import { Button, Card, PageHeader, Badge, Modal, Input, Alert, EmptyState } from '../components/ui'
-import { fetchItemMarketData } from '../utils/api'
+import { fetchItemMarketData, fetchItemThumbnails } from '../utils/api'
 import { unprotectCookie } from '../utils/config'
 
 const TAG_OPTIONS = [
@@ -194,11 +194,19 @@ function TradeRow({ trade, index, total, onEdit, onRemove, onMove }) {
   const totalRap = trade.offer_items.reduce((s, i) => s + (i.rap || 0), 0)
   const requestCount = trade.request_item_ids?.length ?? 0
 
+  // Fetch thumbnails for this trade's offer items
+  const [thumbs, setThumbs] = useState({})
+  useEffect(() => {
+    const ids = trade.offer_items.map(i => i.assetId).filter(Boolean)
+    if (!ids.length) return
+    fetchItemThumbnails(ids, '50x50').then(urls => setThumbs(urls))
+  }, [trade.offer_items])
+
   return (
     <div
       style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        padding: '12px 20px', borderBottom: '1px solid var(--border)',
+        padding: '10px 20px', borderBottom: '1px solid var(--border)',
         transition: 'background 0.1s',
       }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
@@ -207,6 +215,33 @@ function TradeRow({ trade, index, total, onEdit, onRemove, onMove }) {
       <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace', minWidth: 20 }}>
         {index + 1}
       </span>
+
+      {/* Item thumbnail strip */}
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        {trade.offer_items.slice(0, 4).map(item => (
+          <div key={item.assetId} style={{
+            width: 36, height: 36, borderRadius: 6, overflow: 'hidden',
+            background: 'var(--surface-3)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            {thumbs[item.assetId]
+              ? <img src={thumbs[item.assetId]} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <div style={{ width: 16, height: 16, borderRadius: 3, background: 'var(--border-light)' }} />
+            }
+          </div>
+        ))}
+        {trade.offer_items.length > 4 && (
+          <div style={{
+            width: 36, height: 36, borderRadius: 6,
+            background: 'var(--surface-3)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, color: 'var(--text-dim)', fontWeight: 600,
+          }}>
+            +{trade.offer_items.length - 4}
+          </div>
+        )}
+      </div>
+
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {names}
@@ -281,8 +316,18 @@ function TradeModal({ existing, username, onClose, onSave }) {
   const [requestResults, setRequestResults] = useState([])
   const searchDebounce = useRef(null)
 
+  // Thumbnails for inventory items
+  const [thumbnails, setThumbnails] = useState({}) // assetId → imageUrl
+
   // Active tab: 'offer' | 'request'
   const [tab, setTab] = useState('offer')
+
+  // Fetch thumbnails when inventory items are available
+  useEffect(() => {
+    if (!inventory.length) return
+    const ids = inventory.map(i => i.assetId)
+    fetchItemThumbnails(ids, '110x110').then(urls => setThumbnails(urls))
+  }, [inventory])
 
   // Load Rolimons catalog once
   useEffect(() => {
@@ -410,12 +455,31 @@ function TradeModal({ existing, username, onClose, onSave }) {
                   onClick={() => toggleOffer(item.assetId)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '9px 14px', cursor: 'pointer',
+                    padding: '8px 14px', cursor: 'pointer',
                     background: selectedIds.has(item.assetId) ? 'var(--accent-dim)' : 'transparent',
                     borderLeft: `2px solid ${selectedIds.has(item.assetId) ? 'var(--accent)' : 'transparent'}`,
                     transition: 'all 0.1s',
                   }}
                 >
+                  {/* Item thumbnail */}
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 'var(--r-sm)', flexShrink: 0,
+                    background: 'var(--surface-3)',
+                    border: `1px solid ${selectedIds.has(item.assetId) ? 'var(--accent)' : 'var(--border)'}`,
+                    overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'border-color 0.1s',
+                  }}>
+                    {thumbnails[item.assetId] ? (
+                      <img
+                        src={thumbnails[item.assetId]}
+                        alt={item.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--border-light)' }} />
+                    )}
+                  </div>
+
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.name}
