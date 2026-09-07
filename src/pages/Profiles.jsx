@@ -59,9 +59,9 @@ export default function Profiles() {
         }
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20, minHeight: 480 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 16, minHeight: 480 }}>
         {/* Profile list */}
-        <Card padding="12px">
+        <Card padding="10px">
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 8px', marginBottom: 8 }}>
             Profiles
           </div>
@@ -98,9 +98,9 @@ export default function Profiles() {
 
         {/* Queue */}
         <Card padding="0">
-          <div style={{ display: 'flex', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border)', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {selected ? `${selected} — Queue` : 'Select a profile'}
               </div>
               {selected && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -108,7 +108,7 @@ export default function Profiles() {
               </div>}
             </div>
             {selected && (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                 <Button variant="ghost" size="sm" icon={<Pencil size={12} />} onClick={() => setRenamingProfile(selected)}>
                   Rename
                 </Button>
@@ -190,12 +190,10 @@ export default function Profiles() {
 // ─── Trade Row ────────────────────────────────────────────────────────────────
 
 function TradeRow({ trade, index, total, onEdit, onRemove, onMove }) {
-  const names = trade.offer_items.map(i => i.name).join(', ')
   const totalRap = trade.offer_items.reduce((s, i) => s + (i.rap || 0), 0)
   const requestCount = trade.request_item_ids?.length ?? 0
-
-  // Fetch thumbnails for this trade's offer items
   const [thumbs, setThumbs] = useState({})
+
   useEffect(() => {
     const ids = trade.offer_items.map(i => i.assetId).filter(Boolean)
     if (!ids.length) return
@@ -205,60 +203,62 @@ function TradeRow({ trade, index, total, onEdit, onRemove, onMove }) {
   return (
     <div
       style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 20px', borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderBottom: '1px solid var(--border)',
         transition: 'background 0.1s',
       }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace', minWidth: 20 }}>
+      {/* Index */}
+      <span style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace', minWidth: 16, flexShrink: 0 }}>
         {index + 1}
       </span>
 
-      {/* Item thumbnail strip */}
-      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+      {/* Thumbnails */}
+      <div style={{ display: 'flex', gap: 3, flexShrink: 0 }}>
         {trade.offer_items.slice(0, 4).map(item => (
           <div key={item.assetId} style={{
-            width: 36, height: 36, borderRadius: 6, overflow: 'hidden',
+            width: 34, height: 34, borderRadius: 6, overflow: 'hidden', flexShrink: 0,
             background: 'var(--surface-3)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {thumbs[item.assetId]
               ? <img src={thumbs[item.assetId]} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <div style={{ width: 16, height: 16, borderRadius: 3, background: 'var(--border-light)' }} />
+              : <div style={{ width: 14, height: 14, borderRadius: 3, background: 'var(--border-light)' }} />
             }
           </div>
         ))}
         {trade.offer_items.length > 4 && (
           <div style={{
-            width: 36, height: 36, borderRadius: 6,
+            width: 34, height: 34, borderRadius: 6, flexShrink: 0,
             background: 'var(--surface-3)', border: '1px solid var(--border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 10, color: 'var(--text-dim)', fontWeight: 600,
-          }}>
-            +{trade.offer_items.length - 4}
-          </div>
+          }}>+{trade.offer_items.length - 4}</div>
         )}
       </div>
 
+      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {names}
+        <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {trade.offer_items.map(i => i.name).join(', ')}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-          RAP: {totalRap.toLocaleString('pt-BR')}
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span>RAP: {totalRap.toLocaleString('pt-BR')}</span>
           {requestCount > 0 && (
-            <span style={{ color: 'var(--success)', marginLeft: 6 }}>
-              · {requestCount} item{requestCount !== 1 ? 's' : ''} requested
+            <span style={{ color: 'var(--success)' }}>
+              {requestCount} requested
             </span>
           )}
+          {(trade.tags ?? []).map(t => (
+            <span key={t} style={{ color: 'var(--accent)', fontSize: 10 }}>{TAG_LABELS[t] ?? t}</span>
+          ))}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {(trade.tags ?? []).map(t => <Badge key={t} variant="accent" size="xs">{TAG_LABELS[t] ?? t}</Badge>)}
-      </div>
-      <div style={{ display: 'flex', gap: 4 }}>
+
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
         <Button variant="ghost" size="sm" onClick={() => onMove(-1)} disabled={index === 0}><ChevronUp size={13} /></Button>
         <Button variant="ghost" size="sm" onClick={() => onMove(1)} disabled={index === total - 1}><ChevronDown size={13} /></Button>
         <Button variant="ghost" size="sm" icon={<Pencil size={12} />} onClick={onEdit} />
@@ -308,25 +308,24 @@ function TradeModal({ existing, username, onClose, onSave }) {
   // Tags
   const [tags, setTags] = useState(new Set(existing?.tags ?? []))
 
-  // Request items — from Rolimons catalog (not inventory)
+  // Request items
   const [requestIds, setRequestIds] = useState(new Set(existing?.request_item_ids ?? []))
-  const [catalog, setCatalog] = useState({})         // id → { name, acronym, rap, value }
+  const [catalog, setCatalog] = useState({})
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [requestSearch, setRequestSearch] = useState('')
   const [requestResults, setRequestResults] = useState([])
+  const [requestThumbs, setRequestThumbs] = useState({}) // id → imageUrl
   const searchDebounce = useRef(null)
 
-  // Thumbnails for inventory items
-  const [thumbnails, setThumbnails] = useState({}) // assetId → imageUrl
+  // Offer thumbnails
+  const [thumbnails, setThumbnails] = useState({})
 
-  // Active tab: 'offer' | 'request'
   const [tab, setTab] = useState('offer')
 
-  // Fetch thumbnails when inventory items are available
+  // Fetch offer thumbnails when inventory loads
   useEffect(() => {
     if (!inventory.length) return
-    const ids = inventory.map(i => i.assetId)
-    fetchItemThumbnails(ids, '110x110').then(urls => setThumbnails(urls))
+    fetchItemThumbnails(inventory.map(i => i.assetId), '110x110').then(urls => setThumbnails(urls))
   }, [inventory])
 
   // Load Rolimons catalog once
@@ -349,12 +348,21 @@ function TradeModal({ existing, username, onClose, onSave }) {
           item.name?.toLowerCase().includes(q) ||
           item.acronym?.toLowerCase().includes(q)
         )
-        .slice(0, 30)
+        .slice(0, 40)
         .map(([id, item]) => ({ id: Number(id), ...item }))
       setRequestResults(results)
+      // Fetch thumbnails for search results
+      const ids = results.map(r => r.id)
+      if (ids.length) fetchItemThumbnails(ids, '110x110').then(urls => setRequestThumbs(prev => ({ ...prev, ...urls })))
     }, 250)
     return () => clearTimeout(searchDebounce.current)
   }, [requestSearch, catalog])
+
+  // Fetch thumbnails for already-selected request items when catalog loads
+  useEffect(() => {
+    if (!Object.keys(catalog).length || !requestIds.size) return
+    fetchItemThumbnails([...requestIds], '110x110').then(urls => setRequestThumbs(prev => ({ ...prev, ...urls })))
+  }, [catalog])
 
   const toggleOffer = id => setSelectedIds(prev => {
     const next = new Set(prev)
@@ -369,11 +377,17 @@ function TradeModal({ existing, username, onClose, onSave }) {
     next.add(id); return next
   })
 
-  const toggleRequest = id => setRequestIds(prev => {
-    const next = new Set(prev)
-    if (next.has(id)) next.delete(id); else next.add(id)
-    return next
-  })
+  const toggleRequest = id => {
+    setRequestIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+    // Fetch thumb for this item if not already loaded
+    if (!requestThumbs[id]) {
+      fetchItemThumbnails([id], '110x110').then(urls => setRequestThumbs(prev => ({ ...prev, ...urls })))
+    }
+  }
 
   const removeRequest = id => setRequestIds(prev => {
     const next = new Set(prev); next.delete(id); return next
@@ -398,15 +412,17 @@ function TradeModal({ existing, username, onClose, onSave }) {
 
   const filteredOffer = inventory.filter(i => i.name.toLowerCase().includes(offerSearch.toLowerCase()))
 
-  // Items currently in the request list (resolved from catalog)
+  // Selected request items resolved from catalog
   const requestedItems = [...requestIds].map(id => ({
     id,
     name: catalog[id]?.name ?? `Item ${id}`,
+    acronym: catalog[id]?.acronym ?? '',
     rap: catalog[id]?.rap ?? 0,
+    value: catalog[id]?.value ?? -1,
   }))
 
   const TAB_STYLE = active => ({
-    padding: '6px 16px', borderRadius: 'var(--r-sm)',
+    padding: '6px 14px', borderRadius: 'var(--r-sm)',
     fontSize: 12, fontWeight: 600, cursor: 'pointer',
     border: 'none', fontFamily: 'inherit',
     background: active ? 'var(--accent-dim)' : 'transparent',
@@ -415,8 +431,8 @@ function TradeModal({ existing, username, onClose, onSave }) {
   })
 
   return (
-    <Modal open onClose={onClose} title={existing ? 'Edit Trade' : 'New Trade'} width={680}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <Modal open onClose={onClose} title={existing ? 'Edit Trade' : 'New Trade'} width={700}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', padding: 4, borderRadius: 'var(--r)', border: '1px solid var(--border)' }}>
@@ -443,7 +459,7 @@ function TradeModal({ existing, username, onClose, onSave }) {
               onChange={e => setOfferSearch(e.target.value)}
               style={{ marginBottom: 10 }}
             />
-            <div style={{ height: 280, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)', background: 'var(--surface-2)' }}>
+            <div style={{ height: 300, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)', background: 'var(--surface-2)' }}>
               {invLoading && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>Loading inventory…</div>}
               {invError && <div style={{ padding: 16, color: 'var(--danger)', fontSize: 13 }}>{invError}</div>}
               {!invLoading && !invError && filteredOffer.length === 0 && (
@@ -461,7 +477,6 @@ function TradeModal({ existing, username, onClose, onSave }) {
                     transition: 'all 0.1s',
                   }}
                 >
-                  {/* Item thumbnail */}
                   <div style={{
                     width: 44, height: 44, borderRadius: 'var(--r-sm)', flexShrink: 0,
                     background: 'var(--surface-3)',
@@ -469,17 +484,11 @@ function TradeModal({ existing, username, onClose, onSave }) {
                     overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'border-color 0.1s',
                   }}>
-                    {thumbnails[item.assetId] ? (
-                      <img
-                        src={thumbnails[item.assetId]}
-                        alt={item.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--border-light)' }} />
-                    )}
+                    {thumbnails[item.assetId]
+                      ? <img src={thumbnails[item.assetId]} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: 20, height: 20, borderRadius: 4, background: 'var(--border-light)' }} />
+                    }
                   </div>
-
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {item.name}
@@ -503,37 +512,14 @@ function TradeModal({ existing, username, onClose, onSave }) {
 
         {/* ── Tab: Request Items ── */}
         {tab === 'request' && (
-          <div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-              Optionally specify items you want in return. Search the Rolimons catalog by name or acronym.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              Search the Rolimons catalog by name or acronym. Click to add/remove.
             </div>
 
-            {/* Selected items chips */}
-            {requestedItems.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                {requestedItems.map(item => (
-                  <div key={item.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '4px 10px', borderRadius: 99,
-                    background: 'var(--success-dim)', border: '1px solid var(--success)',
-                    fontSize: 12, color: 'var(--success)',
-                  }}>
-                    <span style={{ fontWeight: 500 }}>{item.name}</span>
-                    <span style={{ color: 'var(--text-dim)', fontSize: 10 }}>RAP {item.rap.toLocaleString('pt-BR')}</span>
-                    <button
-                      onClick={() => removeRequest(item.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--success)', padding: 0, display: 'flex', alignItems: 'center' }}
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Search box */}
-            <div style={{ position: 'relative', marginBottom: 10 }}>
-              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+            <div style={{ position: 'relative' }}>
+              <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)', pointerEvents: 'none' }} />
               <input
                 value={requestSearch}
                 onChange={e => setRequestSearch(e.target.value)}
@@ -547,14 +533,14 @@ function TradeModal({ existing, username, onClose, onSave }) {
               />
             </div>
 
-            {/* Results */}
-            <div style={{ height: 240, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)', background: 'var(--surface-2)' }}>
+            {/* Results grid */}
+            <div style={{ height: 300, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--r)', background: 'var(--surface-2)', padding: 10 }}>
               {catalogLoading && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: 13 }}>
                   Loading Rolimons catalog…
                 </div>
               )}
-              {!catalogLoading && !requestSearch.trim() && (
+              {!catalogLoading && !requestSearch.trim() && requestedItems.length === 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-dim)', fontSize: 13 }}>
                   Type to search the Rolimons catalog
                 </div>
@@ -564,39 +550,61 @@ function TradeModal({ existing, username, onClose, onSave }) {
                   No items found for "{requestSearch}"
                 </div>
               )}
-              {!catalogLoading && requestResults.map(item => {
-                const isSelected = requestIds.has(item.id)
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => toggleRequest(item.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '9px 14px', cursor: 'pointer',
-                      background: isSelected ? 'var(--success-dim)' : 'transparent',
-                      borderLeft: `2px solid ${isSelected ? 'var(--success)' : 'transparent'}`,
-                      transition: 'all 0.1s',
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                        {item.acronym && <span style={{ color: 'var(--text-dim)', fontWeight: 400, marginLeft: 6, fontSize: 11 }}>{item.acronym}</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                        RAP: {(item.rap || 0).toLocaleString('pt-BR')}
-                        {item.value > 0 && ` · Value: ${item.value.toLocaleString('pt-BR')}`}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <div style={{ width: 16, height: 16, borderRadius: 4, background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="10" height="8" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+
+              {/* Show selected items first if no search */}
+              {!catalogLoading && !requestSearch.trim() && requestedItems.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {requestedItems.map(item => (
+                    <RequestItemCard
+                      key={item.id}
+                      item={item}
+                      thumb={requestThumbs[item.id]}
+                      selected={true}
+                      onToggle={() => toggleRequest(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Search results grid */}
+              {!catalogLoading && requestSearch.trim() && requestResults.length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {requestResults.map(item => (
+                    <RequestItemCard
+                      key={item.id}
+                      item={item}
+                      thumb={requestThumbs[item.id]}
+                      selected={requestIds.has(item.id)}
+                      onToggle={() => toggleRequest(item.id)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Selected chips summary */}
+            {requestedItems.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {requestedItems.map(item => (
+                  <div key={item.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '3px 8px', borderRadius: 99,
+                    background: 'var(--success-dim)', border: '1px solid var(--success)',
+                    fontSize: 11, color: 'var(--success)',
+                  }}>
+                    <span style={{ fontWeight: 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {item.acronym || item.name}
+                    </span>
+                    <button
+                      onClick={() => removeRequest(item.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--success)', padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -640,5 +648,70 @@ function TradeModal({ existing, username, onClose, onSave }) {
         </div>
       </div>
     </Modal>
+  )
+}
+
+// ─── Request Item Card (grid tile) ───────────────────────────────────────────
+
+function RequestItemCard({ item, thumb, selected, onToggle }) {
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '8px 6px', borderRadius: 'var(--r)',
+        background: selected ? 'var(--success-dim)' : 'var(--surface-3)',
+        border: `1px solid ${selected ? 'var(--success)' : 'var(--border)'}`,
+        cursor: 'pointer', transition: 'all 0.1s', gap: 6, position: 'relative',
+        userSelect: 'none',
+      }}
+      onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--border-light)' }}
+      onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = 'var(--border)' }}
+    >
+      {/* Checkmark badge */}
+      {selected && (
+        <div style={{
+          position: 'absolute', top: 4, right: 4,
+          width: 14, height: 14, borderRadius: 4,
+          background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width="9" height="7" fill="none" stroke="#fff" strokeWidth="2.5" viewBox="0 0 9 7"><path d="M1 3.5l2.5 2.5L8 1"/></svg>
+        </div>
+      )}
+
+      {/* Thumbnail */}
+      <div style={{
+        width: 64, height: 64, borderRadius: 8, overflow: 'hidden',
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        {thumb
+          ? <img src={thumb} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--border-light)' }} />
+        }
+      </div>
+
+      {/* Name */}
+      <div style={{
+        fontSize: 11, fontWeight: 600, color: selected ? 'var(--success)' : 'var(--text)',
+        textAlign: 'center', width: '100%',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        lineHeight: 1.3,
+      }}>
+        {item.name}
+      </div>
+
+      {/* RAP / Value */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, width: '100%' }}>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)', textAlign: 'center' }}>
+          RAP {(item.rap || 0).toLocaleString('pt-BR')}
+        </div>
+        {item.value > 0 && (
+          <div style={{ fontSize: 10, color: 'var(--text-dim)', textAlign: 'center' }}>
+            Val {item.value.toLocaleString('pt-BR')}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
