@@ -92,12 +92,12 @@ export default function Sidebar({ current, onNavigate }) {
       {/* Footer */}
       <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)' }}>
         <a
-          href="https://github.com/your-org/HyaAdPoster"
+          href="https://github.com/HyaFranch/hyaadposter"
           target="_blank"
           rel="noreferrer"
           onClick={e => {
             e.preventDefault()
-            window.electronAPI?.shell?.openExternal('https://github.com/your-org/HyaAdPoster')
+            window.electronAPI?.shell?.openExternal('https://github.com/HyaFranch/hyaadposter')
           }}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
